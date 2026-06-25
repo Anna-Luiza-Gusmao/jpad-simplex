@@ -3,11 +3,7 @@ import { useNavigate } from 'react-router';
 import { Plus, Trash2, ChevronRight, Calculator, Info, X } from 'lucide-react';
 import { Logo } from '../components/Logo';
 import { ConstraintRow, ConstraintOp, SimplexProblem } from '../types';
-<<<<<<< HEAD
-import { mockSolve } from '../utils/solver';
-=======
 import { solveProblem } from '../utils/api';
->>>>>>> main
 
 let constraintCounter = 3;
 
@@ -33,10 +29,7 @@ export function InputPage() {
   const [seekInteger, setSeekInteger] = useState(false);
   const [calcDual, setCalcDual] = useState(false);
   const [errors, setErrors] = useState<string[]>([]);
-<<<<<<< HEAD
-=======
   const [loading, setLoading] = useState(false);
->>>>>>> main
 
   /* ── Variable management ── */
   function addVariable() {
@@ -89,11 +82,7 @@ export function InputPage() {
   }
 
   /* ── Solve ── */
-<<<<<<< HEAD
-  function handleSolve() {
-=======
   async function handleSolve() {
->>>>>>> main
     const errs: string[] = [];
     if (!objCoeffs.some(c => parseFloat(c) !== 0))
       errs.push('A função objetivo deve ter pelo menos um coeficiente não nulo.');
@@ -107,10 +96,6 @@ export function InputPage() {
     if (errs.length > 0) return;
 
     const problem: SimplexProblem = { objectiveType, numVars, objCoeffs, constraints, seekInteger, calcDual };
-<<<<<<< HEAD
-    const result = mockSolve(problem);
-    navigate('/results', { state: { problem, result } });
-=======
 
     // Sends the problem to the real Python backend and waits for the result.
     setLoading(true);
@@ -122,7 +107,6 @@ export function InputPage() {
     } finally {
       setLoading(false);
     }
->>>>>>> main
   }
 
   /* ── Checkbox helper ── */
@@ -386,14 +370,9 @@ export function InputPage() {
         <div className="flex justify-end pb-4">
           <button
             onClick={handleSolve}
-<<<<<<< HEAD
-            className="flex items-center gap-2 bg-[#1b2b3a] hover:bg-[#243447] active:scale-95 text-white px-8 py-3 rounded-xl text-sm font-medium shadow-md hover:shadow-lg transition-all"
-          ><Calculator size={15} />Resolver<ChevronRight size={15} /></button>
-=======
             disabled={loading}
             className="flex items-center gap-2 bg-[#1b2b3a] hover:bg-[#243447] active:scale-95 text-white px-8 py-3 rounded-xl text-sm font-medium shadow-md hover:shadow-lg transition-all disabled:opacity-60 disabled:cursor-not-allowed disabled:active:scale-100"
           >{loading ? 'Resolvendo...' : (<><Calculator size={15} />Resolver<ChevronRight size={15} /></>)}</button>
->>>>>>> main
         </div>
       </main>
 

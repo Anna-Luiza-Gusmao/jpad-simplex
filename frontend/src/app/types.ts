@@ -28,8 +28,6 @@ export interface TableauRow {
   values: number[];
 }
 
-<<<<<<< HEAD
-=======
 export interface DualFormulation {
   objectiveType: 'minimize' | 'maximize';
   objCoeffs: number[];
@@ -74,7 +72,6 @@ export interface IntegerResult {
   message?: string;
 }
 
->>>>>>> main
 export interface SimplexResult {
   optimalZ: number;
   varValues: VarValue[];
@@ -87,8 +84,6 @@ export interface SimplexResult {
   optimalPoint: [number, number];
   chartBounds: { xMax: number; yMax: number };
   twoVarProblem: boolean;
-<<<<<<< HEAD
-=======
   hasMultipleSolutions?: boolean;
   multipleSolutionVars?: string[];
   alternativeSolutions?: VarValue[][];
@@ -96,5 +91,4 @@ export interface SimplexResult {
   integerResult?: IntegerResult;
   integerFeasiblePoints?: [number, number][];
   integerOptimalPoint?: [number, number];
->>>>>>> main
 }

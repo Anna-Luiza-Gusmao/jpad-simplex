@@ -102,14 +102,11 @@ export function FeasibilityChart({ problem, result }: Props) {
 
   const [optSX, optSY] = toSVG(optimalPoint[0], optimalPoint[1], xMax, yMax);
 
-<<<<<<< HEAD
-=======
   // Integer overlay (only present when the user requested the integer solution).
   const integerPoints = result.integerFeasiblePoints ?? [];
   const intOpt = result.integerOptimalPoint;
   const [intOptSX, intOptSY] = intOpt ? toSVG(intOpt[0], intOpt[1], xMax, yMax) : [0, 0];
 
->>>>>>> main
   return (
     <div className="w-full overflow-x-auto">
       <svg
@@ -184,8 +181,6 @@ export function FeasibilityChart({ problem, result }: Props) {
           return <circle key={`fv${i}`} cx={sx} cy={sy} r="2.5" fill="#64748b" opacity="0.65" />;
         })}
 
-<<<<<<< HEAD
-=======
         {/* Integer feasible points (only when integer solution was requested) */}
         {integerPoints.map(([x, y], i) => {
           const [sx, sy] = toSVG(x, y, xMax, yMax);
@@ -203,7 +198,6 @@ export function FeasibilityChart({ problem, result }: Props) {
           );
         })}
 
->>>>>>> main
         {/* Optimal point */}
         {result.isOptimal && (
           <>
@@ -213,8 +207,6 @@ export function FeasibilityChart({ problem, result }: Props) {
           </>
         )}
 
-<<<<<<< HEAD
-=======
         {/* Integer optimal point (drawn on top so it's clearly visible even if it coincides with the continuous optimum) */}
         {intOpt && (
           <>
@@ -223,7 +215,6 @@ export function FeasibilityChart({ problem, result }: Props) {
           </>
         )}
 
->>>>>>> main
         {/* Axes (drawn on top of grid/region) */}
         <line x1={ML} y1={MT} x2={ML} y2={MT + CH} stroke="#64748b" strokeWidth="1.5" />
         <line x1={ML} y1={MT + CH} x2={ML + CW} y2={MT + CH} stroke="#64748b" strokeWidth="1.5" />

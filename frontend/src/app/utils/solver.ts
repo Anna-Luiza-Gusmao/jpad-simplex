@@ -184,8 +184,6 @@ export function mockSolve(problem: SimplexProblem): SimplexResult {
     chartBounds,
     twoVarProblem,
   };
-<<<<<<< HEAD
-=======
 }
 
 // ───────────────────────────────────────────────────────────────────────────
@@ -334,5 +332,4 @@ export function computeIntegerPoints(
     }
   }
   return points;
->>>>>>> main
 }

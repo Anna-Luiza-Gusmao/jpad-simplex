@@ -8,10 +8,7 @@ import {
   Activity,
   CircleDot,
   LayoutGrid,
-<<<<<<< HEAD
-=======
   Sparkles,
->>>>>>> main
 } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { Logo } from '../components/Logo';
@@ -44,26 +41,18 @@ function renderHeader(h: string): ReactNode {
   if (h === 'Base') return 'Base';
   if (h === 'b') return <span className="font-semibold">b</span>;
   if (h.startsWith('x')) return <><em>x</em><sub>{h.slice(1)}</sub></>;
-<<<<<<< HEAD
-  if (h.startsWith('F')) return <><em>F</em><sub>{h.slice(1)}</sub></>;
-=======
   if (h.startsWith('y')) return <><em>y</em><sub>{h.slice(1)}</sub></>;
   if (h.startsWith('F')) return <><em>F</em><sub>{h.slice(1)}</sub></>;
   if (h.startsWith('e')) return <><em>e</em><sub>{h.slice(1)}</sub></>;
->>>>>>> main
   return h;
 }
 
 function renderBase(b: string): ReactNode {
   if (b === 'Z') return <em className="not-italic font-bold text-green-700">Z</em>;
   if (b.startsWith('x')) return <><em>x</em><sub>{b.slice(1)}</sub></>;
-<<<<<<< HEAD
-  if (b.startsWith('F')) return <><em>F</em><sub>{b.slice(1)}</sub></>;
-=======
   if (b.startsWith('y')) return <><em>y</em><sub>{b.slice(1)}</sub></>;
   if (b.startsWith('F')) return <><em>F</em><sub>{b.slice(1)}</sub></>;
   if (b.startsWith('e')) return <><em>e</em><sub>{b.slice(1)}</sub></>;
->>>>>>> main
   return b;
 }
 
@@ -177,8 +166,6 @@ function GraficaTab({ problem, result }: { problem: SimplexProblem; result: Simp
               <span className="w-3 h-3 rounded-full bg-amber-400 inline-block border-2 border-white shadow" />
               Solução Ótima
             </span>
-<<<<<<< HEAD
-=======
             {result.integerOptimalPoint && (
               <>
                 <span className="flex items-center gap-1.5 text-violet-500">
@@ -191,7 +178,6 @@ function GraficaTab({ problem, result }: { problem: SimplexProblem; result: Simp
                 </span>
               </>
             )}
->>>>>>> main
           </div>
         )}
       </div>
@@ -217,11 +203,6 @@ function GraficaTab({ problem, result }: { problem: SimplexProblem; result: Simp
 }
 
 // ── Dual Tab ────────────────────────────────────────────────
-<<<<<<< HEAD
-function DualTab() {
-  return (
-    <div className="flex flex-col gap-4">
-=======
 function DualTab({ result }: { result: SimplexResult }) {
   const dual = result.dualResult;
 
@@ -263,20 +244,10 @@ function DualTab({ result }: { result: SimplexResult }) {
 
   return (
     <div className="flex flex-col gap-5">
->>>>>>> main
       <div>
         <p className="text-slate-700" style={{ fontSize: '1.05rem', fontWeight: 500 }}>
           Solução do Problema Dual
         </p>
-<<<<<<< HEAD
-        <p className="text-slate-500 text-sm mt-1.5">Apresentação da tabela para a resoluço do dual:</p>
-      </div>
-      <div className="rounded-xl border border-amber-200 bg-amber-50 min-h-[220px] flex items-center justify-center p-8">
-        <p className="text-orange-500 text-sm text-center">
-          Layout reservado para a tabela Dual gerada pelo Python.
-        </p>
-      </div>
-=======
         <p className="text-slate-500 text-sm mt-1.5">
           O problema dual associa uma variável <em>y<sub>i</sub></em> a cada restrição do primal.
           Pela <strong>dualidade forte</strong>, o valor ótimo do dual coincide com o do primal.
@@ -412,26 +383,11 @@ function DualTab({ result }: { result: SimplexResult }) {
           </table>
         </div>
       </div>
->>>>>>> main
     </div>
   );
 }
 
 // ── Inteira Tab ──────────────────────────────────────────────
-<<<<<<< HEAD
-function InteiraTab() {
-  return (
-    <div className="flex flex-col gap-4">
-      <div>
-        <p className="text-slate-700" style={{ fontSize: '1.05rem', fontWeight: 500 }}>Solução Inteira</p>
-        <p className="text-slate-500 text-sm mt-1.5">Apresentação da solução garantindo que x<sub>1</sub> e x<sub>2</sub> sejam valores inteiros:</p>
-      </div>
-      <div className="rounded-xl border border-purple-200 bg-purple-50 min-h-[220px] flex items-center justify-center p-8">
-        <p className="text-purple-500 text-sm text-center">
-          Layout reservado para o log de ramificação e limite ou planos de corte.
-        </p>
-      </div>
-=======
 function InteiraTab({ result }: { result: SimplexResult }) {
   const integer = result.integerResult;
 
@@ -628,7 +584,6 @@ function InteiraTab({ result }: { result: SimplexResult }) {
           </div>
         )}
       </div>
->>>>>>> main
     </div>
   );
 }
@@ -743,8 +698,6 @@ export function ResultsPage() {
           </div>
         </div>
 
-<<<<<<< HEAD
-=======
         {/* Multiple optimal solutions notice */}
         {result.hasMultipleSolutions && result.alternativeSolutions && result.alternativeSolutions.length > 0 && (
           <div className="bg-amber-50 border border-amber-200 rounded-xl p-5 flex gap-4">
@@ -778,7 +731,6 @@ export function ResultsPage() {
           </div>
         )}
 
->>>>>>> main
         {/* Tabs panel */}
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm">
 
@@ -813,13 +765,8 @@ export function ResultsPage() {
           <div className="p-6">
             {activeTab === 'primal' && <PrimalTab result={result} />}
             {activeTab === 'grafica' && <GraficaTab problem={problem} result={result} />}
-<<<<<<< HEAD
-            {activeTab === 'dual' && <DualTab />}
-            {activeTab === 'inteira' && <InteiraTab />}
-=======
             {activeTab === 'dual' && <DualTab result={result} />}
             {activeTab === 'inteira' && <InteiraTab result={result} />}
->>>>>>> main
           </div>
         </div>
       </main>
