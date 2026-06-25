@@ -1,0 +1,125 @@
+# =============================================================================
+# JPAD Simplex — .gitignore raiz
+# Cobre: Python (backend), Node/Vite (frontend), SO e editores.
+# O frontend/  tem seu proprio .gitignore para regras locais da pasta.
+# =============================================================================
+
+# =============================================================================
+# PYTHON — backend
+# =============================================================================
+
+# Ambiente virtual
+.venv/
+venv/
+env/
+ENV/
+
+# Cache do interpretador
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Build / distribuicao
+*.egg-info/
+dist/
+build/
+*.egg
+*.whl
+MANIFEST
+
+# pytest
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# mypy / pyright / ruff
+.mypy_cache/
+.pyright/
+.ruff_cache/
+
+# Saida do matplotlib (gerado por graficos.py em dev)
+backend/grafico_simplex.png
+
+# Variaveis de ambiente do backend
+backend/.env
+backend/.env.local
+
+# =============================================================================
+# NODE / VITE — frontend
+# =============================================================================
+
+frontend/node_modules/
+frontend/dist/
+frontend/dist-ssr/
+frontend/.vite/
+frontend/.cache/
+frontend/*.tsbuildinfo
+
+# Variaveis de ambiente do frontend (ja coberto por frontend/.gitignore,
+# listado aqui por redundancia de seguranca)
+frontend/.env
+frontend/.env.local
+frontend/.env.*.local
+
+# =============================================================================
+# SISTEMA OPERACIONAL
+# =============================================================================
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+desktop.ini
+$RECYCLE.BIN/
+
+# Linux
+*~
+
+# =============================================================================
+# EDITORES E IDES
+# =============================================================================
+
+# VS Code (preserva extensoes recomendadas)
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+
+# JetBrains (PyCharm, WebStorm, etc.)
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# Vim / Neovim
+*.swp
+*.swo
+Session.vim
+
+# Emacs
+\#*\#
+.\#*
+
+# =============================================================================
+# MISCELANEA
+# =============================================================================
+
+# Logs gerais
+*.log
+logs/
+
+# Arquivos temporarios
+*.tmp
+*.temp
+.temp/
+
+# Arquivos comprimidos gerados localmente
+*.zip
+*.tar.gz
+*.rar
