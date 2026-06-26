@@ -185,3 +185,151 @@ export function mockSolve(problem: SimplexProblem): SimplexResult {
     twoVarProblem,
   };
 }
+
+// ───────────────────────────────────────────────────────────────────────────
+// Chart geometry (used together with the real Python backend)
+// ───────────────────────────────────────────────────────────────────────────
+
+export interface Geometry {
+  feasibleVertices: [number, number][];
+  optimalPoint: [number, number];
+  chartBounds: { xMax: number; yMax: number };
+  twoVarProblem: boolean;
+}
+
+/**
+ * Computes ONLY the 2D drawing data for the feasibility chart
+ * (feasible vertices, optimal point and axis bounds).
+ *
+ * The optimization itself is performed by the Python backend; this helper
+ * just prepares what the chart needs. When `varValues` (the backend's optimal
+ * solution) is provided, the optimal point is taken from it to stay perfectly
+ * consistent with the backend; otherwise it falls back to a local vertex scan.
+ */
+export function computeGeometry(
+  problem: SimplexProblem,
+  varValues?: VarValue[]
+): Geometry {
+  const n = problem.numVars;
+  const twoVarProblem = n === 2;
+
+  if (!twoVarProblem) {
+    return {
+      feasibleVertices: [],
+      optimalPoint: [0, 0],
+      chartBounds: { xMax: 10, yMax: 10 },
+      twoVarProblem: false,
+    };
+  }
+
+  const lines: CLine[] = [
+    { a: 1, b: 0, c: 0, op: '>=' },
+    { a: 0, b: 1, c: 0, op: '>=' },
+  ];
+  for (const c of problem.constraints) {
+    lines.push({
+      a: parseFloat(c.coefficients[0]) || 0,
+      b: parseFloat(c.coefficients[1]) || 0,
+      c: parseFloat(c.rhs) || 0,
+      op: c.op,
+    });
+  }
+
+  // All pairwise intersections that satisfy every constraint.
+  const rawPts: Point[] = [];
+  for (let i = 0; i < lines.length; i++) {
+    for (let j = i + 1; j < lines.length; j++) {
+      const pt = lineIntersect(lines[i].a, lines[i].b, lines[i].c, lines[j].a, lines[j].b, lines[j].c);
+      if (pt && pt[0] >= -1e-8 && pt[1] >= -1e-8) {
+        const clean: Point = [Math.max(0, round4(pt[0])), Math.max(0, round4(pt[1]))];
+        if (satisfiesAll(clean[0], clean[1], lines)) rawPts.push(clean);
+      }
+    }
+  }
+
+  // Deduplicate.
+  const uniq: Point[] = [];
+  for (const p of rawPts) {
+    if (!uniq.some(q => Math.abs(q[0] - p[0]) < 1e-6 && Math.abs(q[1] - p[1]) < 1e-6)) {
+      uniq.push(p);
+    }
+  }
+  const feasibleVertices = sortCCW(uniq);
+
+  // Optimal point: prefer the backend solution, else scan vertices locally.
+  let optimalPoint: Point = [0, 0];
+  if (varValues && varValues.length >= 2) {
+    optimalPoint = [round4(varValues[0].value), round4(varValues[1].value)];
+  } else {
+    const c1 = parseFloat(problem.objCoeffs[0]) || 0;
+    const c2 = parseFloat(problem.objCoeffs[1]) || 0;
+    let bestZ = problem.objectiveType === 'maximize' ? -Infinity : Infinity;
+    for (const pt of feasibleVertices) {
+      const z = c1 * pt[0] + c2 * pt[1];
+      const better = problem.objectiveType === 'maximize' ? z > bestZ : z < bestZ;
+      if (better) { bestZ = z; optimalPoint = pt; }
+    }
+  }
+
+  // Axis bounds with a little headroom.
+  let xMax = 2, yMax = 2;
+  for (const c of problem.constraints) {
+    const a = parseFloat(c.coefficients[0]) || 0;
+    const b = parseFloat(c.coefficients[1]) || 0;
+    const rhs = parseFloat(c.rhs) || 0;
+    if (a > 1e-9) xMax = Math.max(xMax, rhs / a);
+    if (b > 1e-9) yMax = Math.max(yMax, rhs / b);
+  }
+  xMax = Math.max(xMax, optimalPoint[0]) * 1.35;
+  yMax = Math.max(yMax, optimalPoint[1]) * 1.35;
+  const chartBounds = { xMax: Math.max(xMax, 5), yMax: Math.max(yMax, 5) };
+
+  return { feasibleVertices, optimalPoint, chartBounds, twoVarProblem };
+}
+
+// ──────────────────────────────────────────────────────────────────────
+// Integer feasible points (used for the integer-solution visualization)
+// ──────────────────────────────────────────────────────────────────────
+
+/**
+ * Enumerates all integer points (x1, x2) within the chart bounds that satisfy
+ * every constraint of the problem. Used to plot the integer feasibility on the
+ * chart when the user requests the integer solution.
+ *
+ * Stays on the client because it is purely geometric and cheap for 2D didactic
+ * problems. A safeguard limits the search to ~1100 candidate points so very
+ * large bounds never freeze the UI; in that case an empty list is returned.
+ */
+export function computeIntegerPoints(
+  problem: SimplexProblem,
+  chartBounds: { xMax: number; yMax: number }
+): Point[] {
+  if (problem.numVars !== 2) return [];
+
+  const xMax = Math.ceil(chartBounds.xMax);
+  const yMax = Math.ceil(chartBounds.yMax);
+
+  // Performance safeguard: skip enumeration when the grid is too large.
+  if ((xMax + 1) * (yMax + 1) > 1100) return [];
+
+  const lines: CLine[] = [
+    { a: 1, b: 0, c: 0, op: '>=' },
+    { a: 0, b: 1, c: 0, op: '>=' },
+  ];
+  for (const c of problem.constraints) {
+    lines.push({
+      a: parseFloat(c.coefficients[0]) || 0,
+      b: parseFloat(c.coefficients[1]) || 0,
+      c: parseFloat(c.rhs) || 0,
+      op: c.op,
+    });
+  }
+
+  const points: Point[] = [];
+  for (let x = 0; x <= xMax; x++) {
+    for (let y = 0; y <= yMax; y++) {
+      if (satisfiesAll(x, y, lines)) points.push([x, y]);
+    }
+  }
+  return points;
+}

@@ -102,6 +102,11 @@ export function FeasibilityChart({ problem, result }: Props) {
 
   const [optSX, optSY] = toSVG(optimalPoint[0], optimalPoint[1], xMax, yMax);
 
+  // Integer overlay (only present when the user requested the integer solution).
+  const integerPoints = result.integerFeasiblePoints ?? [];
+  const intOpt = result.integerOptimalPoint;
+  const [intOptSX, intOptSY] = intOpt ? toSVG(intOpt[0], intOpt[1], xMax, yMax) : [0, 0];
+
   return (
     <div className="w-full overflow-x-auto">
       <svg
@@ -176,12 +181,37 @@ export function FeasibilityChart({ problem, result }: Props) {
           return <circle key={`fv${i}`} cx={sx} cy={sy} r="2.5" fill="#64748b" opacity="0.65" />;
         })}
 
+        {/* Integer feasible points (only when integer solution was requested) */}
+        {integerPoints.map(([x, y], i) => {
+          const [sx, sy] = toSVG(x, y, xMax, yMax);
+          return (
+            <circle
+              key={`ip${i}`}
+              cx={sx}
+              cy={sy}
+              r="3"
+              fill="#a78bfa"
+              opacity="0.75"
+              stroke="#fff"
+              strokeWidth="0.8"
+            />
+          );
+        })}
+
         {/* Optimal point */}
         {result.isOptimal && (
           <>
             <circle cx={optSX} cy={optSY} r="9" fill="rgba(245,158,11,0.18)" />
             <circle cx={optSX} cy={optSY} r="5.5" fill="#f59e0b" />
             <circle cx={optSX} cy={optSY} r="2.5" fill="#fff" />
+          </>
+        )}
+
+        {/* Integer optimal point (drawn on top so it's clearly visible even if it coincides with the continuous optimum) */}
+        {intOpt && (
+          <>
+            <circle cx={intOptSX} cy={intOptSY} r="9" fill="rgba(124,58,237,0.20)" />
+            <circle cx={intOptSX} cy={intOptSY} r="5.5" fill="#7c3aed" stroke="#fff" strokeWidth="1.5" />
           </>
         )}
 

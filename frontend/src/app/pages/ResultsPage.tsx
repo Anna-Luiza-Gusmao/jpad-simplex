@@ -8,6 +8,7 @@ import {
   Activity,
   CircleDot,
   LayoutGrid,
+  Sparkles,
 } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { Logo } from '../components/Logo';
@@ -40,14 +41,18 @@ function renderHeader(h: string): ReactNode {
   if (h === 'Base') return 'Base';
   if (h === 'b') return <span className="font-semibold">b</span>;
   if (h.startsWith('x')) return <><em>x</em><sub>{h.slice(1)}</sub></>;
+  if (h.startsWith('y')) return <><em>y</em><sub>{h.slice(1)}</sub></>;
   if (h.startsWith('F')) return <><em>F</em><sub>{h.slice(1)}</sub></>;
+  if (h.startsWith('e')) return <><em>e</em><sub>{h.slice(1)}</sub></>;
   return h;
 }
 
 function renderBase(b: string): ReactNode {
   if (b === 'Z') return <em className="not-italic font-bold text-green-700">Z</em>;
   if (b.startsWith('x')) return <><em>x</em><sub>{b.slice(1)}</sub></>;
+  if (b.startsWith('y')) return <><em>y</em><sub>{b.slice(1)}</sub></>;
   if (b.startsWith('F')) return <><em>F</em><sub>{b.slice(1)}</sub></>;
+  if (b.startsWith('e')) return <><em>e</em><sub>{b.slice(1)}</sub></>;
   return b;
 }
 
@@ -161,6 +166,18 @@ function GraficaTab({ problem, result }: { problem: SimplexProblem; result: Simp
               <span className="w-3 h-3 rounded-full bg-amber-400 inline-block border-2 border-white shadow" />
               Solução Ótima
             </span>
+            {result.integerOptimalPoint && (
+              <>
+                <span className="flex items-center gap-1.5 text-violet-500">
+                  <span className="w-2.5 h-2.5 rounded-full bg-violet-400 inline-block border border-white" />
+                  Pontos inteiros viáveis
+                </span>
+                <span className="flex items-center gap-1.5 text-violet-700">
+                  <span className="w-3 h-3 rounded-full bg-violet-600 inline-block border-2 border-white shadow" />
+                  Solução inteira ótima
+                </span>
+              </>
+            )}
           </div>
         )}
       </div>
@@ -186,36 +203,386 @@ function GraficaTab({ problem, result }: { problem: SimplexProblem; result: Simp
 }
 
 // ── Dual Tab ────────────────────────────────────────────────
-function DualTab() {
+function DualTab({ result }: { result: SimplexResult }) {
+  const dual = result.dualResult;
+
+  if (!dual) {
+    return (
+      <div className="rounded-xl border border-amber-200 bg-amber-50 min-h-[220px] flex items-center justify-center p-8">
+        <p className="text-orange-500 text-sm text-center">
+          A solução dual ainda não foi calculada para este problema.
+        </p>
+      </div>
+    );
+  }
+
+  if (dual.status === 'error' || !dual.isOptimal) {
+    return (
+      <div className="rounded-xl border border-red-200 bg-red-50 min-h-[120px] flex items-center justify-center p-8">
+        <p className="text-red-600 text-sm text-center">
+          {dual.message ?? `Não foi possível resolver o problema dual (status: ${dual.status}).`}
+        </p>
+      </div>
+    );
+  }
+
+  const f = dual.formulation;
+  const objLabel = f.objectiveType === 'minimize' ? 'min' : 'max';
+  const isStrongDuality = Math.abs(dual.optimalZ - result.optimalZ) < 1e-4;
+
+  const fmtCoef = (v: number, first: boolean): string => {
+    if (first) return v < 0 ? `-${formatNum(Math.abs(v))}` : `${formatNum(v)}`;
+    return v < 0 ? ` − ${formatNum(Math.abs(v))}` : ` + ${formatNum(v)}`;
+  };
+
+  const renderExpr = (coeffs: number[]): ReactNode =>
+    coeffs.map((v, i) => (
+      <span key={i}>
+        {fmtCoef(v, i === 0)}<em>y</em><sub>{i + 1}</sub>
+      </span>
+    ));
+
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-5">
       <div>
         <p className="text-slate-700" style={{ fontSize: '1.05rem', fontWeight: 500 }}>
           Solução do Problema Dual
         </p>
-        <p className="text-slate-500 text-sm mt-1.5">Apresentação da tabela para a resoluço do dual:</p>
-      </div>
-      <div className="rounded-xl border border-amber-200 bg-amber-50 min-h-[220px] flex items-center justify-center p-8">
-        <p className="text-orange-500 text-sm text-center">
-          Layout reservado para a tabela Dual gerada pelo Python.
+        <p className="text-slate-500 text-sm mt-1.5">
+          O problema dual associa uma variável <em>y<sub>i</sub></em> a cada restrição do primal.
+          Pela <strong>dualidade forte</strong>, o valor ótimo do dual coincide com o do primal.
         </p>
+      </div>
+
+      {dual.standardized && (
+        <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600">
+          <strong>Observação:</strong> o primal contém restrições mistas (<code>{'>='}</code> ou <code>=</code>),
+          então foi padronizado para a forma <em>max + todas <code>{'<='}</code></em> antes da dualização.
+          O número de variáveis duais pode ser maior que o de restrições do primal original.
+        </div>
+      )}
+
+      <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-5">
+        <p className="text-xs text-slate-500 font-medium uppercase tracking-wide mb-3">Formulação</p>
+        <div className="font-mono text-sm text-slate-800 leading-7">
+          <div>
+            <span className="font-semibold text-slate-600">{objLabel}</span>
+            &nbsp;<em>Z</em> = {renderExpr(f.objCoeffs)}
+          </div>
+          <div className="text-slate-600 mt-2">sujeito a:</div>
+          <div className="ml-4">
+            {f.constraints.map((c, ci) => (
+              <div key={ci}>
+                {renderExpr(c.coefficients)}
+                <span className="mx-2 text-slate-500">{c.op === '<=' ? '≤' : c.op === '>=' ? '≥' : '='}</span>
+                <span className="font-semibold">{formatNum(c.rhs)}</span>
+              </div>
+            ))}
+            <div className="text-slate-600 mt-1">
+              {f.objCoeffs.map((_, i) => (
+                <span key={i}>
+                  {i > 0 && ', '}<em>y</em><sub>{i + 1}</sub>
+                </span>
+              ))}
+              &nbsp;≥ 0
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-4">
+        <div className="bg-green-50 border border-green-200 rounded-xl px-5 py-3 flex items-center gap-3">
+          <Target className="text-green-600" size={18} />
+          <div>
+            <p className="text-green-700 text-xs font-medium">Z* do dual</p>
+            <p className="text-green-800 font-bold font-[Inter]" style={{ fontSize: '1.4rem', lineHeight: 1.1 }}>
+              {formatNum(dual.optimalZ)}
+            </p>
+          </div>
+          {isStrongDuality && (
+            <span className="text-xs text-green-700 bg-green-100 rounded-md px-2 py-1 ml-2">
+              = Z* primal ✓
+            </span>
+          )}
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {dual.varValues.map(v => (
+            <span key={v.index} className="text-xs bg-white border border-slate-200 rounded-lg px-3 py-2 font-mono text-slate-700">
+              <em>y</em><sub>{v.index}</sub> = {formatNum(v.value)}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <p className="text-xs text-slate-500 font-medium uppercase tracking-wide mb-3">
+          Última Iteração (Quadro Ótimo do Dual)
+        </p>
+        <div className="overflow-x-auto rounded-xl border border-slate-200">
+          <table className="w-full">
+            <thead>
+              <tr className="bg-slate-50 border-b border-slate-200">
+                {dual.tableHeaders.map((h, i) => {
+                  const isRhs = h === 'b';
+                  const isBase = h === 'Base';
+                  return (
+                    <th
+                      key={i}
+                      className={`px-5 py-3 text-sm font-semibold text-center ${
+                        isBase ? 'text-left pl-6 text-slate-600' :
+                        isRhs ? 'text-slate-700 bg-slate-100' :
+                        (h.startsWith('F') || h.startsWith('e')) ? 'text-slate-500' :
+                        'text-slate-700'
+                      }`}
+                    >
+                      {renderHeader(h)}
+                    </th>
+                  );
+                })}
+              </tr>
+            </thead>
+            <tbody>
+              {dual.tableRows.map((row, ri) => {
+                const isZRow = row.base === 'Z';
+                return (
+                  <tr
+                    key={ri}
+                    className={`border-b border-slate-100 last:border-0 ${
+                      isZRow ? 'bg-green-50' : 'hover:bg-slate-50/60'
+                    }`}
+                  >
+                    <td className={`px-6 py-3.5 text-sm font-semibold text-left ${isZRow ? 'text-green-700' : 'text-slate-700'}`}>
+                      {renderBase(row.base)}
+                    </td>
+                    {row.values.map((v, ci) => {
+                      const isRhs = ci === row.values.length - 1;
+                      const isZero = Math.abs(v) < 1e-10;
+                      return (
+                        <td
+                          key={ci}
+                          className={`px-5 py-3.5 text-sm text-center font-mono tabular-nums ${
+                            isZRow
+                              ? isRhs
+                                ? 'font-bold text-green-700 bg-green-100/60'
+                                : 'font-semibold text-green-700'
+                              : isRhs
+                              ? 'font-semibold text-slate-800 bg-slate-100/70'
+                              : isZero
+                              ? 'text-slate-300'
+                              : 'text-slate-700'
+                          }`}
+                        >
+                          {isZero && !isRhs ? '0' : formatNum(v)}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );
 }
 
 // ── Inteira Tab ──────────────────────────────────────────────
-function InteiraTab() {
-  return (
-    <div className="flex flex-col gap-4">
-      <div>
-        <p className="text-slate-700" style={{ fontSize: '1.05rem', fontWeight: 500 }}>Solução Inteira</p>
-        <p className="text-slate-500 text-sm mt-1.5">Apresentação da solução garantindo que x<sub>1</sub> e x<sub>2</sub> sejam valores inteiros:</p>
-      </div>
+function InteiraTab({ result }: { result: SimplexResult }) {
+  const integer = result.integerResult;
+
+  if (!integer) {
+    return (
       <div className="rounded-xl border border-purple-200 bg-purple-50 min-h-[220px] flex items-center justify-center p-8">
         <p className="text-purple-500 text-sm text-center">
-          Layout reservado para o log de ramificação e limite ou planos de corte.
+          A solução inteira ainda não foi calculada para este problema.
         </p>
+      </div>
+    );
+  }
+
+  if (integer.status === 'error' || (!integer.isOptimal && integer.status !== 'node_limit')) {
+    return (
+      <div className="flex flex-col gap-4">
+        <div className="rounded-xl border border-red-200 bg-red-50 p-5">
+          <p className="text-red-700 font-medium">Não foi possível obter uma solução inteira</p>
+          <p className="text-red-600 text-sm mt-1">
+            {integer.message ?? `Status: ${integer.status}.`}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  const isLimit = integer.status === 'node_limit';
+  const gap = result.optimalZ - integer.optimalZ;
+  const gapPct = Math.abs(result.optimalZ) > 1e-9 ? (gap / result.optimalZ) * 100 : 0;
+
+  return (
+    <div className="flex flex-col gap-5">
+      <div>
+        <p className="text-slate-700" style={{ fontSize: '1.05rem', fontWeight: 500 }}>
+          Solução Inteira (Branch &amp; Bound)
+        </p>
+        <p className="text-slate-500 text-sm mt-1.5">
+          Restringindo as variáveis a valores inteiros, o algoritmo de
+          <strong> Branch &amp; Bound</strong> explorou ramos do problema relaxado,
+          podando os que não podiam melhorar o melhor incumbente encontrado.
+        </p>
+      </div>
+
+      {isLimit && (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-700">
+          <strong>Atenção:</strong> {integer.message}
+        </div>
+      )}
+
+      {/* Optimal Z + integer variable values */}
+      <div className="flex flex-wrap items-center gap-4">
+        <div className="bg-purple-50 border border-purple-200 rounded-xl px-5 py-3 flex items-center gap-3">
+          <CircleDot className="text-purple-600" size={18} />
+          <div>
+            <p className="text-purple-700 text-xs font-medium">Z* inteiro</p>
+            <p className="text-purple-800 font-bold font-[Inter]" style={{ fontSize: '1.4rem', lineHeight: 1.1 }}>
+              {formatNum(integer.optimalZ)}
+            </p>
+          </div>
+          {Math.abs(gap) < 1e-4 && (
+            <span className="text-xs text-purple-700 bg-purple-100 rounded-md px-2 py-1 ml-2">
+              = Z* contínuo ✓
+            </span>
+          )}
+          {Math.abs(gap) >= 1e-4 && (
+            <span className="text-xs text-purple-600 bg-purple-100 rounded-md px-2 py-1 ml-2">
+              gap: {formatNum(Math.abs(gap))} ({Math.abs(gapPct).toFixed(1)}%)
+            </span>
+          )}
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {integer.varValues.map(v => (
+            <span key={v.index} className="text-xs bg-white border border-slate-200 rounded-lg px-3 py-2 font-mono text-slate-700">
+              <em>x</em><sub>{v.index}</sub> = {formatNum(v.value)}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      {/* Tableau of the winning node */}
+      <div>
+        <p className="text-xs text-slate-500 font-medium uppercase tracking-wide mb-3">
+          Última Iteração (Quadro Ótimo do Nó Vencedor)
+        </p>
+        <div className="overflow-x-auto rounded-xl border border-slate-200">
+          <table className="w-full">
+            <thead>
+              <tr className="bg-slate-50 border-b border-slate-200">
+                {integer.tableHeaders.map((h, i) => {
+                  const isRhs = h === 'b';
+                  const isBase = h === 'Base';
+                  return (
+                    <th
+                      key={i}
+                      className={`px-5 py-3 text-sm font-semibold text-center ${
+                        isBase ? 'text-left pl-6 text-slate-600' :
+                        isRhs ? 'text-slate-700 bg-slate-100' :
+                        (h.startsWith('F') || h.startsWith('e')) ? 'text-slate-500' :
+                        'text-slate-700'
+                      }`}
+                    >
+                      {renderHeader(h)}
+                    </th>
+                  );
+                })}
+              </tr>
+            </thead>
+            <tbody>
+              {integer.tableRows.map((row, ri) => {
+                const isZRow = row.base === 'Z';
+                return (
+                  <tr
+                    key={ri}
+                    className={`border-b border-slate-100 last:border-0 ${
+                      isZRow ? 'bg-purple-50' : 'hover:bg-slate-50/60'
+                    }`}
+                  >
+                    <td className={`px-6 py-3.5 text-sm font-semibold text-left ${isZRow ? 'text-purple-700' : 'text-slate-700'}`}>
+                      {renderBase(row.base)}
+                    </td>
+                    {row.values.map((v, ci) => {
+                      const isRhs = ci === row.values.length - 1;
+                      const isZero = Math.abs(v) < 1e-10;
+                      return (
+                        <td
+                          key={ci}
+                          className={`px-5 py-3.5 text-sm text-center font-mono tabular-nums ${
+                            isZRow
+                              ? isRhs
+                                ? 'font-bold text-purple-700 bg-purple-100/60'
+                                : 'font-semibold text-purple-700'
+                              : isRhs
+                              ? 'font-semibold text-slate-800 bg-slate-100/70'
+                              : isZero
+                              ? 'text-slate-300'
+                              : 'text-slate-700'
+                          }`}
+                        >
+                          {isZero && !isRhs ? '0' : formatNum(v)}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Branch & Bound log */}
+      <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-5">
+        <p className="text-xs text-slate-500 font-medium uppercase tracking-wide mb-3">
+          Log da Exploração (Branch &amp; Bound)
+        </p>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+          <div className="bg-white border border-slate-200 rounded-lg px-3 py-2">
+            <p className="text-xs text-slate-500">Nós explorados</p>
+            <p className="text-slate-800 font-bold font-mono" style={{ fontSize: '1.1rem' }}>{integer.log.nodesExplored}</p>
+          </div>
+          <div className="bg-white border border-slate-200 rounded-lg px-3 py-2">
+            <p className="text-xs text-slate-500">Podas por limite</p>
+            <p className="text-slate-800 font-bold font-mono" style={{ fontSize: '1.1rem' }}>{integer.log.prunedByBound}</p>
+          </div>
+          <div className="bg-white border border-slate-200 rounded-lg px-3 py-2">
+            <p className="text-xs text-slate-500">Podas por inviabilidade</p>
+            <p className="text-slate-800 font-bold font-mono" style={{ fontSize: '1.1rem' }}>{integer.log.prunedByInfeasibility}</p>
+          </div>
+          <div className="bg-white border border-slate-200 rounded-lg px-3 py-2">
+            <p className="text-xs text-slate-500">Profundidade máxima</p>
+            <p className="text-slate-800 font-bold font-mono" style={{ fontSize: '1.1rem' }}>{integer.log.maxDepth}</p>
+          </div>
+        </div>
+
+        {integer.log.incumbentHistory.length > 0 && (
+          <div>
+            <p className="text-xs text-slate-500 font-medium mb-2">Histórico de incumbentes (melhores soluções encontradas):</p>
+            <div className="flex flex-col gap-1.5">
+              {integer.log.incumbentHistory.map((h, idx) => (
+                <div key={idx} className="flex flex-wrap gap-2 items-center text-xs">
+                  <span className="text-slate-500 font-mono w-32">nó #{h.nodeId} (prof. {h.depth})</span>
+                  <span className="bg-white border border-slate-200 rounded px-2 py-0.5 font-mono text-slate-700">
+                    Z = {formatNum(h.z)}
+                  </span>
+                  <span className="text-slate-500">→</span>
+                  {h.solution.map((v, i) => (
+                    <span key={i} className="bg-white border border-slate-200 rounded px-2 py-0.5 font-mono text-slate-700">
+                      <em>x</em><sub>{i + 1}</sub> = {v}
+                    </span>
+                  ))}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -331,6 +698,39 @@ export function ResultsPage() {
           </div>
         </div>
 
+        {/* Multiple optimal solutions notice */}
+        {result.hasMultipleSolutions && result.alternativeSolutions && result.alternativeSolutions.length > 0 && (
+          <div className="bg-amber-50 border border-amber-200 rounded-xl p-5 flex gap-4">
+            <div className="bg-amber-100 rounded-xl p-2.5 flex-shrink-0 h-fit">
+              <Sparkles className="text-amber-600" size={20} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-amber-800 font-medium" style={{ fontSize: '0.95rem' }}>
+                Este problema possui múltiplas soluções ótimas
+              </p>
+              <p className="text-amber-700 text-sm mt-1">
+                Existem outras combinações de variáveis que produzem o mesmo valor ótimo <em>Z</em> = {formatNum(result.optimalZ)}.
+                Qualquer ponto sobre o segmento entre estas soluções também é ótimo.
+              </p>
+              <div className="mt-3 flex flex-col gap-2">
+                <p className="text-xs text-amber-700 font-medium uppercase tracking-wide">Soluções alternativas:</p>
+                <div className="flex flex-col gap-1.5">
+                  {result.alternativeSolutions.map((alt, idx) => (
+                    <div key={idx} className="flex flex-wrap gap-2 items-center">
+                      <span className="text-xs text-amber-600 font-medium w-14">Alt. {idx + 1}:</span>
+                      {alt.map(v => (
+                        <span key={v.index} className="text-xs bg-white border border-amber-200 rounded-lg px-2.5 py-1 font-mono text-amber-800">
+                          x<sub>{v.index}</sub> = {formatNum(v.value)}
+                        </span>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Tabs panel */}
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm">
 
@@ -365,8 +765,8 @@ export function ResultsPage() {
           <div className="p-6">
             {activeTab === 'primal' && <PrimalTab result={result} />}
             {activeTab === 'grafica' && <GraficaTab problem={problem} result={result} />}
-            {activeTab === 'dual' && <DualTab />}
-            {activeTab === 'inteira' && <InteiraTab />}
+            {activeTab === 'dual' && <DualTab result={result} />}
+            {activeTab === 'inteira' && <InteiraTab result={result} />}
           </div>
         </div>
       </main>

@@ -72,7 +72,11 @@ class SimplexSolver:
 
         all_names = self.variable_names.copy()
         self.artificial_indices = []
-        self.basis = []
+        # The basis must be indexed by ROW (one basic variable per constraint),
+        # so it is initialized with a fixed length and assigned by row index.
+        # Appending instead would group entries by variable type and misalign
+        # the basis with the tableau rows when constraints are mixed (>=, =, <=).
+        self.basis = [-1] * m
 
         col = n
         s_cnt = e_cnt = a_cnt = 1
@@ -82,7 +86,7 @@ class SimplexSolver:
             if constraint_type == '<=':
                 A_aug[i, col] = 1.0
                 all_names.append(f's{s_cnt}')
-                self.basis.append(col)
+                self.basis[i] = col
                 col += 1
                 s_cnt += 1
 
@@ -95,7 +99,7 @@ class SimplexSolver:
                 c_aug[a_col] = -BIG_M
                 all_names.extend([f'e{e_cnt}', f'a{a_cnt}'])
                 self.artificial_indices.append(a_col)
-                self.basis.append(a_col)
+                self.basis[i] = a_col
                 col += 2
                 e_cnt += 1
                 a_cnt += 1
@@ -106,7 +110,7 @@ class SimplexSolver:
                 c_aug[a_col] = -BIG_M
                 all_names.append(f'a{a_cnt}')
                 self.artificial_indices.append(a_col)
-                self.basis.append(a_col)
+                self.basis[i] = a_col
                 col += 1
                 a_cnt += 1
 
